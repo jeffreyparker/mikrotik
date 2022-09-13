@@ -26,21 +26,18 @@ add action=passthrough chain=forward comment="Upload Global Counter" out-interfa
 
 
 # Then create a script that is scheduled to run at midnight
-/system script
-add dont-require-permissions=yes name=ResetMangleCounters owner=admin policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon source="/log info (\
-    \"Bytes Downloaded Today \" . [/ip firewall mangle get [find where comment=\"Download Global Counter\"] bytes])\r\
-    \n/log info (\"Bytes Uploaded Today \" . [/ip firewall mangle get [find where comment=\"Upload Global Counter\"] bytes])\r\
-    \n\r\
-    \n/ip firewall mangle reset-counters-all\r\
-    \n\r\
-    \n/log info \"IP Firewall Mangle Counters Reset by Script\""
+/system script add dont-require-permissions=yes name=ResetMangleCounters owner=admin policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon source="put \"hello\""
+/system scheduler add interval=1d name=ResetMangleCounters on-event=ResetMangleCounters policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon start-date=nov/01/2020 start-time=00:00:00
 
-/system scheduler
-add interval=1d name=ResetMangleCounters on-event=ResetMangleCounters policy=ftp,reboot,read,write,policy,test,password,sniff,sensitive,romon start-date=nov/01/2020 start-time=00:00:00
-
-# The script above in a easier readable format:
+# Edit the script to be:
 /log info ("Bytes Downloaded Today " . [/ip firewall mangle get [find where comment="Download Global Counter"] bytes])
 /log info ("Bytes Uploaded Today " . [/ip firewall mangle get [find where comment="Upload Global Counter"] bytes])
+
+:foreach a in=[/ip firewall mangle find] do={
+    :local comment  [/ip firewall mangle get $a comment];
+    :local bytes ([/ip firewall mangle get $a bytes]  / 1048576);
+    /log info ($comment . " - " . $bytes)
+ }
 
 /ip firewall mangle reset-counters-all
 
